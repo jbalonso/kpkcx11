@@ -1,0 +1,88 @@
+			kpkcs11
+
+Introduction
+============
+
+This is a software implementation of a Version 2.01 PKCS #11 module.
+See http://www.rsasecurity.com/rsalabs/PKCS for information about
+the PKCS standards.
+
+From the PKCS #11 Specification:
+
+	This standard specifies an application program
+	interface (API), called "Cryptoki", to devices
+	which hold cryptographic information and perform
+	cryptographic functions.
+
+This software implements a software "device" which holds cryptographic
+information.  Namely, it implements a "device" which "holds" a
+user's certificate and private key, and uses OpenSSL
+(http://www.openssl.org) routines to perform cryptographic functions
+which rely on that certificate and private key.
+
+
+This code can be configured to run in three environments that each
+correspond with a version of the program kx509.  The kx509 program
+obtains a certificate after using Kerberos to authenticate to a
+Kerberized Certificate Authority (KCA).  After receiving the
+certificate, kx509 stores it, and the associated private key, in
+the appropriate place for the environment.  Where the certificate
+is stored depends on the platform and/or Kerberos version that you
+are using.
+
+Windows
+=======
+
+In the Windows version, the PKCS11 modules expects to find a certificate
+via the CRYPTO API functions provided by Windows.  The Windows kx509
+program stores the certificate and private key there regardless of the
+version of Kerberos that is used by kx509.  This PKCS11 module discovers
+the certificate and private key and makes them available to the invoker
+of PKCS11.
+
+Kerberos 5:
+===========
+
+Non-Windows platforms that use Kerberos 5 in kx509 to authenticate with
+the KCA store the certificate and private key in the Kerberos 5 credentials
+cache disquised as a Kerberos ticket.  This PKCS11 module finds the
+certificate and private key in the user's credentials cache and makes
+them available to the invoker of PKCS11.
+
+Kerberos 4:
+===========
+
+Non-windows platforms that use Kerberos 4 in kx509 to authenticate with
+the KCA store the certificate and private key in the Kerberos 4 credentials
+cache disquised as a Kerberos ticket.  This PKCS11 module finds the
+certificate and private key in the user's credentials cache and makes
+them available to the invoker of PKCS11.
+
+In the non-Windows cases, the version of PKCS11 module that you use must
+match the version of kx509 that you use, since the PKCS11 module must use
+Kerberos functions to locate the certificate and private key in the
+credentials cache.  For Windows, the certificate and private key are
+always in the same location regardless of the Kerberos version that was
+used to obtain them.
+
+
+Configuration and Installation
+==============================
+
+See the file INSTALL found in the src directory.
+
+Acknowledgments
+===============
+
+This code was originally written by Ariel Glenn <ariel@columbia.edu>
+at Columbia University for the Linux operating system.
+
+At the University of Michigan, we ported the code to Windows and other
+operating systems.  We also made changes to better suit our environment
+and conception of a PKI, and to work with our kerberized certificate
+acquisition software kx509/kca.  In addition, we added configuration
+capabilities, debugging capabilities, and a few bug fixes here and there.
+
+We received patches from Simon Wilkinson <simon@sxw.org.uk> to better
+handle the cases of certificates appearing, disappearing, and expiring
+during the life of an application using PKCS11.

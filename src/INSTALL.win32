@@ -1,0 +1,68 @@
+Note that kpkcs11.dll built for Windows requires a "special" build of
+openssl with modified compile options and a static version of the
+library. (Rather than depending on a DLL.) 
+
+Note also that the complete compile process of openssl will fail because
+of these changes.  Just make sure that the static library, libeay32.dll,
+is created in the out32 directory.  Failure to link test programs and
+such beyond that point in the openssl build can be ignored.
+
+*******************************************************
+* (1) Modifying the CFLAGS for the Windows build      *
+*     of openssl                                      *
+*******************************************************
+
+Apply the following patch to the ms\nt.mak file in the openssl distribution
+before compiling openssl on windows:
+
+
+*** nt.mak.orig Thu Nov 15 11:24:33 2001
+--- nt.mak      Mon Jan 14 12:56:35 2002
+***************
+*** 16,22 ****
+  # Set your compiler options
+  PLATFORM=VC-WIN32
+  CC=cl
+! CFLAG= /MD /W3 /WX /G5 /Ox /O2 /Ob2 /Gs0 /GF /Gy /nologo -DWIN32 -DWIN32_LEAN_AND_MEAN -DL_ENDIAN -DDSO_WIN32 /Fdout32
+  APP_CFLAG=
+  LIB_CFLAG=
+  SHLIB_CFLAG=
+--- 16,22 ----
+  # Set your compiler options
+  PLATFORM=VC-WIN32
+  CC=cl
+! CFLAG= /Zl /W3 /G5 /GX /O2 /Ob2 /Gs0 /GF /Gy /nologo -DWIN32 -DWIN32_LEAN_AND_MEAN -DL_ENDIAN -DDSO_WIN32 /Fdout32
+  APP_CFLAG=
+  LIB_CFLAG=
+  SHLIB_CFLAG=
+***************
+*** 30,36 ****
+  SRC_D=.
+  
+  LINK=link
+! LFLAGS=/nologo /subsystem:console /machine:I386 /opt:ref
+  
+  BN_ASM_OBJ=
+  BN_ASM_SRC=
+--- 30,36 ----
+  SRC_D=.
+  
+  LINK=link
+! LFLAGS=/nologo /subsystem:windows /machine:I386 /opt:ref
+  
+  BN_ASM_OBJ=
+  BN_ASM_SRC=
+
+*******************************************************
+* (2) Building a static version of the library        *
+*******************************************************
+
+From the directions in the INSTALL.W32 file supplied with openssl
+to make the static version of the library.  This is done by using
+the Makefile ms\nt.mak.  We did:
+
+	nmake -f ms\nt.mak
+
+after following the other directions in the INSTALL.W32 file
+for setting up the Windows build.
+

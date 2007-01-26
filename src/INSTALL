@@ -1,0 +1,149 @@
+		Configuration and Installation of kpkcs11
+		
+Requirements
+============
+
+All platforms assume the use of OpenSSL.  (http://www.openssl.org)
+We currently build and test with version 0.9.6b of the OpenSSL code.
+Windows builders should refer to the instructions in file INSTALL.win32
+for building a version of OpenSSL which is expected by this build
+environment.
+
+For non-Windows platforms, the PKCS11 code expects to find a certificate
+and private key in the Kerberos credentials cache.  We use the MIT Kerberos
+implementation (http://web.mit.edu/~kerberos).  The Kerberos version you
+choose (K4 or K5) must match the version of Kerberos being used by kx509.
+Kerberos 5 is the default.
+
+NOTE:  To use this module within the Netscape browser, it must be dynamically
+loadable.  This means that it must be dynamically linkable.  This implies that
+shared libraries must be used to build this module.  Therefore, when linking
+the libpkcs11.so library on non-Windows platforms, shared libraries *must*
+be used.
+
+For windows platforms, the PKCS11 code uses the CryptoAPI functions in
+Windows to locate the certifcate and private key. Therefore, no Kerberos
+code is required for the PKCS11 code.  The configuration script assumes that
+Perl is available on the Windows platform.
+
+Configuration
+=============
+
+Non-Windows platforms
+---------------------
+We suggest creating a platform-specific directory beside the src directory
+to keep the source and object files separate.  From within that directory,
+run the configure script.  For example, a default build on Redhat Linux
+might be:
+
+	mkdir i386_linux24
+	cd i386_linux24
+	../src/configure
+	make
+	make install
+
+There are several options to the configure script that may be specified:
+
+--with-umich[=yes]	Specifying this option causes the configure script
+			to use default paths that are very UMICH-specific.
+			It is *not* advised that you use this option.
+--with-krb5[=PATH]	Specifies the use of Kerberos version 5. (Default)
+			You may optionally specify the path to your site's
+			kerberos installation directory.
+--with-krb4[=PATH]	Specifies the use of Kerberos version 4.  Selecting
+			this option disables Kerberos 5.
+			You may optionally specify the path to your site's
+			kerberos installation directory.
+--with-openssl=PATH	You may specify your site's path to the OpenSSL
+			installation.
+
+Other common configure options are available.  Use configure --help to
+determine the other options available.
+
+Windows platforms
+-----------------
+
+There is Windows batch file called kpkcs11.bat which can be modified to 
+set up the correct pointer to the openssl installation to be used.
+The script assumes a separate build directory for windows and uses the
+name i386_nt35.  (This is an artifact of the the AFS environment that
+we use to use common source for several different platforms.)
+
+Modify the script to set the "o" variable to point to your windows build
+of OpenSSL, then run "kpkcs11.bat".  This will invoke the win32 configure
+script using Perl, which will generate Visual Studio workspace and project
+files.  You can open the workspace from Visual Studio and build it from
+there.
+
+Testing
+=======
+
+On the non-Windows platforms, there is a test program built called "t".
+This program attempts invoke a routine within libpkcs11.so.  Running this
+program should verify that the libpkcs11 module can be loaded and all the
+shared libraries that it depends upon can be located and loaded.  You should
+see return code 0 from the three functions that are called.
+
+Symptoms of a library that cannot be found or loaded vary from platform
+to platform.  The usual result in Netscape is that the Cryptographic
+Module does not load, with no further diagnostics.  (See below.)  You
+can use "ldd" on most platforms to determine the loadable library
+dependencies.  Verify that all the dependent libraries can be located.
+
+Installation and Use
+====================
+
+Netscape 4.X
+------------
+Open the browser and select the Security button in the Navigation toolbar,
+or select "Communicator/Tools/Security Info" from the menu, to display the
+Security info dialog.  On the left side of the dialog, select "Cryptographic
+Modules".
+
+Select the "Add" button to the right of the list of current modules.
+Complete the "Security Module Name" with an appropriate name of your
+choice, such as "KX509/KPKCS11 modules".  In the "Security Module File"
+box, give the full location of the kpkcs11 module.  For example, on
+Windows, it might be "C:\Program Files\UofM\kx509\kpkcs11.dll".  On
+non-Windows platforms, it might be "/usr/local/kx509/libpkcs11.so".
+Select the "OK" button.  A new entry should appear in the list of
+Cryptographic Modules.
+
+If the new entry does not show up, it is probably because there was
+a problem loading the module.  See the "Testing" section above for tips
+on troubleshooting that situation.
+
+If you have already run kx509 and obtained a certificate, you should now
+be able to select the "Yours" link under "Certificates" on the left side
+of the Security info dialog.  There should be a certificate displayed in
+the resulting listbox such as "Kerberized X509: kwc 1 (13421830)'s certificate".
+If you do not see a certificate displayed, verify that you have run kx509 and
+successfully obtained a certificate.
+
+
+Netscape 6.X
+------------
+Open the browser and select "Edit/Preferences..." from the menu.  Click the
+"Privacy & Security" triangle to expand the choices within that Category.
+Select "Certificates" under the "Privacy & Security" Category.
+
+Select the "Manage Security Devices ..." pushbutton.  Within the Device
+Manager dialog, select the "Load" pushbutton on the right.  This will
+display another dialog.  Change the "Module Name" entry field to an
+appropriate value, such as "KX509/KPKCS11 Module".  For the "Module
+filename" entry field, you may either type in the correct pathname of the
+kpkcs11 module, or you can select the "Browse" button to navigate to the
+correct location and select the module.
+
+When both fields have been filled in, select the "OK" button to load the
+module.  If the new entry does not show up, it is probably because there
+was a problem loading the module.  See the Testing section above for tips
+on troubleshooting that situation.  After successfully loading the kpkcs11
+module, select the "OK" button on the Device Manager dialog to dismiss it.
+
+If you have already run kx509 and obtained a certificate, you should now
+be able to select the "Manage Certificates" button to see your certificate.
+There should be a certificate displayed in the resulting listbox such as
+"Kerberized X509: kwc 1 (13421830)'s certificate".  If you do not see a
+certificate displayed, verify that you have run kx509 and successfully
+obtained a certificate.

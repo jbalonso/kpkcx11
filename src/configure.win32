@@ -1,0 +1,74 @@
+:
+eval 'exec perl -S $0 ${1+"$@"}'
+    if $running_under_some_shell;
+##
+##  Configure -- KPKCS11 Microsoft Visual C++ configuration script
+##
+
+require 5.000;
+use strict;
+
+my $usage="Usage: Configure [--openssldir=OPENSSLDIR]\n";
+
+# Options:
+#
+# --openssldir	modify Project file (kpkcs11.dsp) to use OPENSSLDIR as base of
+#		subtree containing inc32 and out32dll directories
+#		(Default: X:\\build\\openssl)
+#
+
+my $openssldir="";
+my @skip=();
+
+foreach (@ARGV)
+	{
+	if (/^[-+]/)
+		{
+		if (/^--openssldir=(.*)$/)
+			{
+			$openssldir=$1;
+			}
+		else
+			{
+			print STDERR $usage;
+			exit(1);
+			}
+		}
+	}
+
+chop $openssldir if $openssldir =~ /\/$/;
+
+open(IN,'<../src/kpkcs11.dsp.org') || die "unable to read <../src/kpkcs11.dsp.org:$!\n";
+open(OUT,">kpkcs11/kpkcs11.dsp") || die "unable to create >kpkcs11/kpkcs11.dsp:$!\n";
+while (<IN>)
+	{
+	s/OPENSSLDIR/$openssldir/g;
+
+	print OUT $_."\n";
+	}
+close(IN);
+close(OUT);
+
+print "OPENSSLDIR  becomes $openssldir\n";
+
+exit(0);
+
+sub usage
+	{
+	print STDERR $usage;
+	exit(1);
+	}
+
+sub which
+	{
+	my($name)=@_;
+	my $path;
+	foreach $path (split /:/, $ENV{PATH})
+		{
+		if (-f "$path/$name" and -x _)
+			{
+			return "$path/$name" unless ($name eq "perl" and
+			 system("$path/$name -e " . '\'exit($]<5.0);\''));
+			}
+		}
+	}

@@ -1,0 +1,92 @@
+##### Makefile for KPKCS11 test program #####
+##### $Id: Makefile.in,v 1.1 2007/01/26 16:01:23 kwcoffman Exp $
+
+SHELL		= /bin/sh
+@SET_MAKE@
+
+srcdir		= @srcdir@
+VPATH		= @srcdir@
+
+SHELL		= /bin/sh
+
+CC		= @CC@
+LD		= @LD@
+
+INSTALL		= @INSTALL@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+INSTALL_DATA	= @INSTALL_DATA@
+
+AR		= @AR@
+RANLIB		= @RANLIB@
+RM		= @RM@ -f
+
+DEFS		= @DEFS@
+LIBS		= @LIBS@
+
+CFLAGS		= @CFLAGS@
+LDFLAGS		= @LDFLAGS@
+
+prefix		= @prefix@
+binprefix	=
+exec_prefix	= @exec_prefix@
+bindir		= ${exec_prefix}/bin
+includedir	= ${prefix}/include
+manprefix	=
+man1dir		= ${prefix}/man/man1
+man3dir		= ${prefix}/man/man3
+man8dir		= ${prefix}/man/man8
+
+# The following need to be defined in order
+# to locate the Krb4 and OpenSSL include files and libraries
+
+KRB_BASE	= @KRBBASE@
+OPENSSL_BASE	= @OPENSSLBASE@
+
+PKCS11_LIBS	= @RPATH@ `pwd`/../lib -L `pwd`/../lib -lpkcs11
+# PKCS11_LIBS	= @RPATH@ -L`pwd`/../lib -lpkcs11
+
+KRB_LIBS	= @KRB_REF@ -L@KRB_LIBDIR@ @KRBLIBS@
+
+OPENSSL_LIB	= @OPENSSL_REF@ -L$(OPENSSL_BASE)/lib -lcrypto
+EX_LIBS         = @SOCK_LIBS@
+
+ALL_LIBS	= $(PKCS11_LIBS) $(OPENSSL_LIB) $(KRB_LIBS) $(EX_LIBS)
+
+
+KRB_INCDIR	= $(KRB_BASE)/include
+KRB_INCS	= @KRBINCS@
+
+##### End of system configuration section #####
+
+##### Targets #####
+
+DEFINE		= $(DEFS) @PICFLAGS@ -D@SYS@
+
+INCLUDE		= $(KRB_INCS) -I$(srcdir)/../lib -I$(srcdir)/..
+
+CFLAGS		= @CFLAGS@ $(CCOPT) $(DEFINE)          $(INCLUDE) $(DBG)
+
+LDFLAGS 	= @LD_EXTRA@
+
+
+# nothing below this point should need to be touched
+
+all:	t
+
+.c.o:
+	rm -f $@; $(CC) -c $(CFLAGS) $<
+
+Makefile: Makefile.in ../config.status
+	(cd ..; ./config.status)
+
+../config.status: ../configure
+	(cd ..; ./config.status --recheck)
+
+t:	t.o
+	$(LD) -o t t.o --verbose -all_load $(ALL_LIBS)
+
+clean:	
+	rm -rf *.o t
+
+# Nothing to install.  Add 'null' rule.
+install:

@@ -1,0 +1,64 @@
+##### Top-level Makefile for KPKCS11 #####
+##### $Id: Makefile.in,v 1.1 2007/01/26 16:01:20 kwcoffman Exp $
+
+SHELL= /bin/sh
+@SET_MAKE@
+
+srcdir= @srcdir@
+VPATH= @srcdir@
+
+SHELL= /bin/sh
+
+CC= @CC@
+
+INSTALL= @INSTALL@
+INSTALL_PROGRAM= @INSTALL_PROGRAM@
+INSTALL_DATA= @INSTALL_DATA@
+
+AR= @AR@
+RANLIB= @RANLIB@
+RM= @RM@ -f
+
+DEFS= @DEFS@
+LIBS= @LIBS@
+
+CFLAGS= @CFLAGS@
+LDFLAGS= @LDFLAGS@
+
+prefix= @prefix@
+binprefix=
+exec_prefix= @exec_prefix@
+bindir= ${exec_prefix}/bin
+includedir= ${prefix}/include
+manprefix=
+man1dir= ${prefix}/man/man1
+man3dir= ${prefix}/man/man3
+man8dir= ${prefix}/man/man8
+
+##### End of system configuration section #####
+
+# Subdirectories with makefiles
+SUBDIRS= @SUBDIRS@
+
+##### Targets #####
+
+all:
+	cd lib; ${MAKE} ${MDEFINES} $@
+	cd test; ${MAKE} ${MDEFINES} $@
+
+Makefile: Makefile.in config.status
+	./config.status
+
+config.status: configure
+	./config.status --recheck
+
+clean:
+	cd lib; ${MAKE} clean
+	cd test; ${MAKE} clean
+
+install:
+	@for i in ${SUBDIRS}; do  \
+		cd $$i ; \
+		${MAKE} install ; \
+		cd .. ; \
+	done
