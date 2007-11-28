@@ -74,14 +74,7 @@
 
 #include "debug.h"
 
-#ifndef ANSI
-# ifdef macintosh
-#   define DEBUG
 #   include <stdarg.h>
-# else /* macintosh */
-#   include <varargs.h>
-# endif /* macintosh */
-#endif /* !ANSI */
 
 /* Debug file for windows release version */
 static FILE *dbgfile = NULL;
@@ -152,39 +145,8 @@ void log_write(char *data, int len)
 #endif
 }
 
-
-void log_printf(char *fmt, ...)
-{
-#ifdef DEBUG
-	char buffer[2048];
-#endif
-	
-	va_list vargs;
-	
-	va_start(vargs,fmt);
-	
-#ifdef DEBUG
-	vsprintf(buffer, fmt, vargs);
-	OutputDebugString(buffer);
-#else
-	if (dbgfile == NULL && triedtoopen == 0)
-	{
-		try_open();
-	}
-	if (dbgfile != NULL)
-	{
-		vfprintf(dbgfile, fmt, vargs);
-		fflush(dbgfile);
-	}
-#endif
-	
-	va_end(vargs);
-}
-
-
 #else /* UNIX compatible versions */
 
- 
 void log_write(char *data, int len)
 {
 #ifdef DEBUG
@@ -206,42 +168,40 @@ void log_write(char *data, int len)
 	}
 #endif /* DEBUG */
 }
+#endif
 
-void log_printf(va_alist)
-#ifdef macintosh
-int va_alist;
-#else /* !macintosh */
-va_dcl
-#endif /* macintosh */
+void log_printf(char *fmt, ...)
 {
-	va_list	ap;
-	char	*fmt;
+#ifdef DEBUG
+	char buffer[2048];
+#endif
 	
-
-#ifdef macintosh
-	va_start(ap, va_alist);
-#else /* !macintosh */	
-	va_start(ap);
-#endif /* macintosh */
+	va_list vargs;
 	
-	fmt = va_arg(ap, char *);
-
+	va_start(vargs,fmt);
+	
+#if defined(DEBUG) && defined(WIN32)
+	vsprintf(buffer, fmt, vargs);
+	OutputDebugString(buffer);
+#else
 	if (dbgfile == NULL && triedtoopen == 0)
 	{
 		try_open();
 	}
 	if (dbgfile != NULL)
 	{
-		vfprintf(dbgfile, fmt, ap);
+		vfprintf(dbgfile, fmt, vargs);
 		fflush(dbgfile);
 	}
+#ifndef WIN32
 #ifdef DEBUG
-	else 
+	else
 	{
 		vfprintf(stderr, fmt, ap);
 	}
 #endif /* DEBUG */
+#endif
+#endif
 	
-	va_end(ap);
+	va_end(vargs);
 }
-#endif /* WIN32 */

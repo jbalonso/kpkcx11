@@ -75,14 +75,11 @@
 # ifdef _DEBUG
 #  define DEBUG
 # endif /* _DEBUG */
+#else
+# include <unistd.h>
 #endif /* WIN32 */
 
+#include <stdarg.h>
 
-#ifdef ANSI             /* ANSI compatible version (for Windows) */
-# include <stdarg.h>
-  void log_write( char *data, int len);
-  void log_printf( char *fmt, ... );
-#else                   /* UNIX compatible version          */
-# include <unistd.h>
-  void log_printf( );
-#endif /* ANSI */
+void log_write( char *data, int len);
+void log_printf( char *fmt, ... );
