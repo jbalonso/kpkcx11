@@ -122,6 +122,7 @@ CK_RV PKCS11_RSA_to_RsaPrivateKey(CK_SESSION_HANDLE hSession, RSA *rsa,
 	pTemplate[i].type=CKA_CLASS;
 	pTemplate[i].ulValueLen=sizeof(CK_OBJECT_CLASS);
 	res=CKI_SetAttrValue(&(pTemplate[i]), pObjectClass);
+	free(pObjectClass);
 	if (res!=CKR_OK) return(res);
 	i++;
 	
@@ -254,6 +255,7 @@ CK_RV PKCS11_RSA_to_RsaPrivateKey(CK_SESSION_HANDLE hSession, RSA *rsa,
 	n=(unsigned char *)malloc(pTemplate[i].ulValueLen);
 	BN_bn2bin(rsa->n,n);
 	res=CKI_SetAttrValue(&(pTemplate[i]),n);
+	free(n);
 	if (res!=CKR_OK) return(res);
 	i++;
 	
@@ -262,6 +264,7 @@ CK_RV PKCS11_RSA_to_RsaPrivateKey(CK_SESSION_HANDLE hSession, RSA *rsa,
 	e=(unsigned char *)malloc(pTemplate[i].ulValueLen);
 	BN_bn2bin(rsa->e,e);
 	res=CKI_SetAttrValue(&(pTemplate[i]),e);
+	free(e);
 	if (res!=CKR_OK) return(res);
 	i++;
 	
@@ -270,6 +273,7 @@ CK_RV PKCS11_RSA_to_RsaPrivateKey(CK_SESSION_HANDLE hSession, RSA *rsa,
 	d=(unsigned char *)malloc(pTemplate[i].ulValueLen);
 	BN_bn2bin(rsa->d,d);
 	res=CKI_SetAttrValue(&(pTemplate[i]),d);
+	free(d);
 	if (res!=CKR_OK) return(res);
 	i++;
 	
@@ -278,6 +282,7 @@ CK_RV PKCS11_RSA_to_RsaPrivateKey(CK_SESSION_HANDLE hSession, RSA *rsa,
 	p=(unsigned char *)malloc(pTemplate[i].ulValueLen);
 	BN_bn2bin(rsa->p,p);
 	res=CKI_SetAttrValue(&(pTemplate[i]),p);
+	free(p);
 	if (res!=CKR_OK) return(res);
 	i++;
 	
@@ -286,6 +291,7 @@ CK_RV PKCS11_RSA_to_RsaPrivateKey(CK_SESSION_HANDLE hSession, RSA *rsa,
 	q=(unsigned char *)malloc(pTemplate[i].ulValueLen);
 	BN_bn2bin(rsa->q,q);
 	res=CKI_SetAttrValue(&(pTemplate[i]),q);
+	free(q);
 	if (res!=CKR_OK) return(res);
 	i++;
 	
@@ -294,6 +300,7 @@ CK_RV PKCS11_RSA_to_RsaPrivateKey(CK_SESSION_HANDLE hSession, RSA *rsa,
 	dmp1=(unsigned char *)malloc(pTemplate[i].ulValueLen);
 	BN_bn2bin(rsa->dmp1,dmp1);
 	res=CKI_SetAttrValue(&(pTemplate[i]),dmp1);
+	free(dmp1);
 	if (res!=CKR_OK) return(res);
 	i++;
 	
@@ -302,6 +309,7 @@ CK_RV PKCS11_RSA_to_RsaPrivateKey(CK_SESSION_HANDLE hSession, RSA *rsa,
 	dmq1=(unsigned char *)malloc(pTemplate[i].ulValueLen);
 	BN_bn2bin(rsa->dmq1,dmq1);
 	res=CKI_SetAttrValue(&(pTemplate[i]),dmq1);
+	free(dmq1);
 	if (res!=CKR_OK) return(res);
 	i++;
 	
@@ -310,11 +318,15 @@ CK_RV PKCS11_RSA_to_RsaPrivateKey(CK_SESSION_HANDLE hSession, RSA *rsa,
 	iqmp=(unsigned char *)malloc(pTemplate[i].ulValueLen);
 	BN_bn2bin(rsa->iqmp,iqmp);
 	res=CKI_SetAttrValue(&(pTemplate[i]),iqmp);
+	free(iqmp);
 	if (res!=CKR_OK) return(res);
 	i++;
 	
 	/* pObject is an object handle or something. do we do anything with it? */
 	res=C_CreateObject(hSession,pTemplate,1L,pObject);
+	for (i--; i>=0; i--) if (pTemplate[i].value) free(pTemplate[i].value);
+	free(pTemplate);
+	free(pObject);
 	if (res!=CKR_OK) return(res);
 	return(CKR_OK);
 }
@@ -354,6 +366,7 @@ CK_RV PKCS11_RSA_to_RsaPublicKey(CK_SESSION_HANDLE hSession, RSA *rsa,
 	pTemplate[i].type=CKA_CLASS;
 	pTemplate[i].ulValueLen=sizeof(CK_OBJECT_CLASS);
 	res=CKI_SetAttrValue(&(pTemplate[i]),pObjectClass);
+	free(pObjectClass);
 	if (res!=CKR_OK) return(res);
 	i++;
 	
@@ -462,6 +475,7 @@ CK_RV PKCS11_RSA_to_RsaPublicKey(CK_SESSION_HANDLE hSession, RSA *rsa,
 	n=(unsigned char *)malloc(pTemplate[i].ulValueLen);
 	BN_bn2bin(rsa->n,n);
 	res=CKI_SetAttrValue(&(pTemplate[i]),n);
+	free(n);
 	if (res!=CKR_OK) return(res);
 	i++;
 	
@@ -477,11 +491,15 @@ CK_RV PKCS11_RSA_to_RsaPublicKey(CK_SESSION_HANDLE hSession, RSA *rsa,
 	e=(unsigned char *)malloc(pTemplate[i].ulValueLen);
 	BN_bn2bin(rsa->e,e);
 	res=CKI_SetAttrValue(&(pTemplate[i]),e);
+	free(e);
 	if (res!=CKR_OK) return(res);
 	i++;
 	
 	/* pObject is an object handle or something. do we do anything with it? */
 	res=C_CreateObject(hSession,pTemplate,1L,pObject);
+	for (i--; i>=0; i--) if (pTemplate[i].value) free(pTemplate[i].value);
+	free(pTemplate);
+	free(pObject);
 	if (res!=CKR_OK) return(res);
 	return(CKR_OK);
 }
@@ -539,6 +557,7 @@ CK_RV PKCS11_X509_to_X509Certificate(CK_SESSION_HANDLE hSession,
 	pTemplate[i].ulValueLen=sizeof(CK_OBJECT_CLASS);
 
 	res=CKI_SetAttrValue(&(pTemplate[i]), pObjectClass);
+	free(pObjectClass);
 
 	log_printf("PKCS11_X509_to_X509Certificate: pTemplate[%d].value is %ld\n",
 		i, *(CK_ULONG *)pTemplate[i].value);
@@ -666,6 +685,7 @@ CK_RV PKCS11_X509_to_X509Certificate(CK_SESSION_HANDLE hSession,
 	pTemplate[i].type=CKA_SUBJECT;
 	pTemplate[i].ulValueLen=subject_len;
 	res=CKI_SetAttrValue(&(pTemplate[i]),subject_der);
+	free(subject_der);
 	if (res!=CKR_OK)
 	{
 		log_printf("PKCS11_X509_to_X509Certificate: error setting CKA_SUBJECT (0x%08x)\n", res);
@@ -676,6 +696,7 @@ CK_RV PKCS11_X509_to_X509Certificate(CK_SESSION_HANDLE hSession,
 	pTemplate[i].type=CKA_ISSUER;
 	pTemplate[i].ulValueLen=issuer_len;
 	res=CKI_SetAttrValue(&(pTemplate[i]),issuer_der);
+	free(issuer_der);
 	if (res!=CKR_OK)
 	{
 		log_printf("PKCS11_X509_to_X509Certificate: error setting CKA_ISSUER (0x%08x)\n", res);
@@ -686,6 +707,7 @@ CK_RV PKCS11_X509_to_X509Certificate(CK_SESSION_HANDLE hSession,
 	pTemplate[i].type=CKA_SERIAL_NUMBER;
 	pTemplate[i].ulValueLen=serial_len;
 	res=CKI_SetAttrValue(&(pTemplate[i]),serial_der);
+	free(serial_der);
 	if (res!=CKR_OK)
 	{
 		log_printf("PKCS11_X509_to_X509Certificate: error setting CKA_SERIAL_NUMBER (0x%08x)\n", res);
@@ -696,6 +718,7 @@ CK_RV PKCS11_X509_to_X509Certificate(CK_SESSION_HANDLE hSession,
 	pTemplate[i].type=CKA_VALUE;
 	pTemplate[i].ulValueLen=cert_len;
 	res=CKI_SetAttrValue(&(pTemplate[i]),cert_der);
+	free(cert_der);
 	if (res!=CKR_OK)
 	{
 		log_printf("PKCS11_X509_to_X509Certificate: error setting CKA_VALUE (0x%08x)\n", res);
@@ -706,6 +729,9 @@ CK_RV PKCS11_X509_to_X509Certificate(CK_SESSION_HANDLE hSession,
 	
 	/* pObject is an object handle or something. do we do anything with it? */
 	res=C_CreateObject(hSession,pTemplate,1L,pObject);
+	for (i--; i>=0; i--) if (pTemplate[i].value) free(pTemplate[i].value);
+	free(pTemplate);
+	free(pObject);
 	if (res!=CKR_OK)
 	{
 		log_printf("PKCS11_X509_to_X509Certificate: error creating pObject (0x%08x)\n", res);

@@ -156,7 +156,18 @@ char *getelt(struct a_t **alist, char *name) {
   }
   return(NULL);
 }
+void freeelts(struct a_t **alist) {
+  int i;
 
+  i=0;
+  while (alist[i]) {
+   free(alist[i]->value);
+   free(alist[i]->name);
+   free(alist[i]);
+   i++;
+  }
+  free(alist);
+}
 
 #if defined(WIN32)
 
@@ -725,6 +736,7 @@ int os_getCertAndKey(
 	{
 		log_printf("os_getCertAndKey: %s resolving default credentials cache.\n",
 			error_message(k5_rc));
+		krb5_free_context(k5_context);
 		return 0;
 	}
 
@@ -734,6 +746,8 @@ int os_getCertAndKey(
 	{
 		log_printf("os_getCertAndKey: %s retreiving primary principal from "
 			"credentials cache.\n", error_message(k5_rc));
+		krb5_cc_close(k5_context, cc);
+		krb5_free_context(k5_context);
 		return 0;
 	}
 
@@ -743,6 +757,9 @@ int os_getCertAndKey(
 	{
 		log_printf("os_getCertAndKey: %s creating principal structure for "
 				"server principal\n", error_message(k5_rc));
+		krb5_cc_close(k5_context, cc);
+		krb5_free_cred_contents(k5_context, &match_creds);
+		krb5_free_context(k5_context);
 		return 0;
 	}
 
@@ -751,6 +768,9 @@ int os_getCertAndKey(
 		log_printf("os_getCertAndKey: %s finding the credentials containing the "
 			"private key and certificate in the credentials cache.\n",
 			error_message(k5_rc));
+		krb5_cc_close(k5_context, cc);
+		krb5_free_cred_contents(k5_context, &match_creds);
+		krb5_free_context(k5_context);
 		return 0;
 	}
 
@@ -762,9 +782,29 @@ int os_getCertAndKey(
 	strncpy(name, krb5_princ_name(k5_context, creds.client)->data, namelen);
 
 	log_printf("os_getCertAndKey: K5 name has been assigned with '%s'\n", name);
-	*key_der = creds.ticket.data;
+	*key_der = malloc(creds.ticket.length);
+	if (!*key_der) {
+	    log_printf("os_getCertAndKey: Cannot allocate memory for key\n");
+	    krb5_free_cred_contents(k5_context, &creds);
+	    krb5_cc_close(k5_context, cc);
+	    krb5_free_cred_contents(k5_context, &match_creds);
+	    krb5_free_context(k5_context);
+	    return 0;
+	}
+	memcpy(*key_der, creds.ticket.data,  creds.ticket.length);
 	*key_len = creds.ticket.length;
-	*cert_der = creds.second_ticket.data;
+	*cert_der = malloc(creds.second_ticket.length);
+	if (!*cert_der) {
+	    log_printf("os_getCertAndKey: Cannot allocate memory for cert\n");
+	    free(*key_der);
+	    *key_der=0;
+	    krb5_free_cred_contents(k5_context, &creds);
+	    krb5_cc_close(k5_context, cc);
+	    krb5_free_cred_contents(k5_context, &match_creds);
+	    krb5_free_context(k5_context);
+	    return 0;
+	}
+	memcpy(*cert_der, creds.second_ticket.data,  creds.second_ticket.length);
 	*cert_len = creds.second_ticket.length;
 
 
@@ -809,7 +849,10 @@ int os_getCertAndKey(
 		log_printf("os_getCertAndKey: d2i_X509 failed!\n");
 	}
 	X509_free(x509);
-
+	krb5_free_cred_contents(k5_context, &creds);
+	krb5_cc_close(k5_context, cc);
+	krb5_free_cred_contents(k5_context, &match_creds);
+	krb5_free_context(k5_context);
 	return 1;
 }
 #endif
@@ -1116,6 +1159,8 @@ struct a_t **getCertAndKey(struct a_t **tattrl, char *name, int namelen)
 	free(cert_enc);
 	log_printf("getCertAndKey: 13\n");
 	free(key_enc);
+	free(cert_der);
+	free(key_der);
 
 	log_printf("getCertAndKey: leaving\n");
 	return(attrl);
@@ -1256,11 +1301,13 @@ int checkTokenValidity_KRB5()
 	/* KfM doesn't use a file.  drh 20021024 */
 	/* If we don't already know the Credentials Cache name, determine it now */
 	if (cc_name == NULL) {
+	        char *tempccname;
 		krb5_init_context(&k5_context);
 		krb5_cc_default(k5_context, &cc);
-		cc_name = (char *)krb5_cc_get_name(k5_context, cc);
+		tempccname = (char *)krb5_cc_get_name(k5_context, cc);
+		cc_name=strdup(tempccname); /* leaked, but only once */
 		log_printf("checkTokenValidity_KRB5: cc_name is %s\n",cc_name);
-
+		krb5_cc_close(k5_context, cc);
 		krb5_free_context(k5_context);
 	
 		if (cc_name == NULL) {
@@ -1308,12 +1355,15 @@ int checkTokenValidity_KRB5()
 	if ((k5_rc = krb5_cc_default(k5_context, &cc))) {
 		log_printf("checkTokenValidity_KRB5: %s getting krb5_cc_default\n",
 			error_message(k5_rc));
+		krb5_free_context(k5_context);
 		return(last_result = 0);
 	}
 
 	if ((k5_rc = krb5_cc_get_principal(k5_context, cc, &match_creds.client))) {
 		log_printf("checkTokenValidity_KRB5: %s from krb5_cc_get_principal\n",
 			error_message(k5_rc));  
+		krb5_cc_close(k5_context, cc);
+		krb5_free_context(k5_context);
 		return(last_result = 0);
 	}
        
@@ -1322,15 +1372,19 @@ int checkTokenValidity_KRB5()
   					 &match_creds.server))) {
 		log_printf("checkTokenValidity_KRB5: %s from krb5_sname_to_principal\n",
 			error_message(k5_rc));
+		krb5_cc_close(k5_context, cc);
+		krb5_free_context(k5_context);
 		return(last_result = 0);
 	}
 
 	if ((k5_rc = krb5_cc_retrieve_cred(k5_context, cc, KRB5_TC_MATCH_SRV_NAMEONLY, 
   				    &match_creds, &creds))) {
 		/* Not there _sniff_ */
-		krb5_free_cred_contents(k5_context, &match_creds);
 		log_printf("checkTokenValidity_KRB5: %s from krb5_cc_retrieve_cred\n",
 			error_message(k5_rc));
+		krb5_free_cred_contents(k5_context, &match_creds);
+		krb5_cc_close(k5_context, cc);
+		krb5_free_context(k5_context);
 		return(last_result = 0);
 	}
 
@@ -1348,6 +1402,8 @@ int checkTokenValidity_KRB5()
 		log_printf("checkTokenValidity_KRB5: Nothing's changed since last time\n");
 		krb5_free_cred_contents(k5_context, &match_creds);
 		krb5_free_cred_contents(k5_context, &creds);
+		krb5_cc_close(k5_context, cc);
+		krb5_free_context(k5_context);
 		return(last_result);
 	}
 
@@ -1357,6 +1413,8 @@ int checkTokenValidity_KRB5()
 
 	krb5_free_cred_contents(k5_context, &match_creds);
 	krb5_free_cred_contents(k5_context, &creds);
+	krb5_cc_close(k5_context, cc);
+	krb5_free_context(k5_context);
 
 	/*
 	 * This sucks, because the doauth code will just do all the

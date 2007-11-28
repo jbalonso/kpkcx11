@@ -423,6 +423,7 @@ void PKCS11_Session_Free(PKCS11_SESSION *pSession) {
       PKCS11_Object_Free(pSession->ppSessionObject[i]);
       i++;
     }
+    free(pSession->ppSessionObject);
   }
   if (pSession->pCryptoFunctions!=NULL)
     PKCS11_Functions_Free(pSession->pCryptoFunctions);

@@ -193,7 +193,7 @@ CK_SESSION_INFO_PTR CKI_SessionInfo_New() {
 void CKI_Attribute_Free(CK_ATTRIBUTE_PTR pAttribute) {
   log_printf("CKI_Attribute_Free: entered\n");
   if (pAttribute==NULL) return;
-  if (pAttribute->value==NULL_PTR) 
+  if (pAttribute->value!=NULL_PTR) 
     free(pAttribute->value); 
   free(pAttribute);
   return;

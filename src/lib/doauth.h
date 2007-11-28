@@ -98,6 +98,7 @@ int parsepin();
 char *concat(int sep,...);
 char *strnchr();
 char *getelt(a_t **alist, char *name);
+void freeelts(a_t **alist);
 int name_ok();
 int doauth(a_t ***attrl, a_t ***tattrl);
 int getcert(RSA *rsa, char **buffer, DWORD *buflen);

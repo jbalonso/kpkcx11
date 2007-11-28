@@ -393,23 +393,41 @@ CK_RV PKCS11_Init2_Session(
 	
 	/* create cert and key objects... */
 	user=getelt(tattrl,"user");
-	if (!user)
+	if (!user) {
+		freeelts(attrl);
+		freeelts(tattrl);
 		return(CKR_FUNCTION_FAILED);
+	}
 	cert_enc=getelt(attrl,"cert");
-	if (!cert_enc)
+	if (!cert_enc) {
+		freeelts(attrl);
+		freeelts(tattrl);
 		return(CKR_FUNCTION_FAILED);
+	}
 	cert_der=(char *) malloc(strlen(cert_enc)*2);
-	if (!cert_der)
+	if (!cert_der) {
+		freeelts(attrl);
+		freeelts(tattrl);
 		return(CKR_HOST_MEMORY);
+	}
 	log_printf("PKCS11_Init2_Session: cert '%s'\n",cert_enc);
 	cert_len=b64_decode(cert_enc,strlen(cert_enc),cert_der);
 	log_printf("PKCS11_Init2_Session: cert_len %d\n",cert_len);
 	key_enc=getelt(attrl,"key");
-	if (!key_enc)
+	if (!key_enc) {
+		free(cert_der);
+		freeelts(attrl);
+		freeelts(tattrl);
 		return(CKR_FUNCTION_FAILED);
+	}
 	key_der=(char *) malloc(strlen(key_enc)*2);
-	if (!key_der)
+	if (!key_der) {
+		free(cert_der);
+		free(key_der);
+		freeelts(attrl);
+		freeelts(tattrl);
 		return(CKR_HOST_MEMORY);
+	}
 	key_len=b64_decode(key_enc,strlen(key_enc),key_der);
 	log_printf("PKCS11_Init2_Session: key_len %d\n",key_len);
 	
@@ -418,6 +436,10 @@ CK_RV PKCS11_Init2_Session(
 	d2i_X509(&x,(unsigned char **)&ptr, cert_len);
 	if (x==NULL)
 	{
+		free(cert_der);
+		free(key_der);
+		freeelts(attrl);
+		freeelts(tattrl);
 		log_printf("PKCS11_Init2_Session: Login here with null x\n");
 		return(CKR_FUNCTION_FAILED);
 	}
@@ -426,8 +448,14 @@ CK_RV PKCS11_Init2_Session(
 	subject=X509_get_subject_name(x);
 	subject_len=i2d_X509_NAME(subject,NULL);
 	subject_der=(char *)malloc(subject_len);
-	if (!subject_der)
+	if (!subject_der) {
+		X509_free(x);
+		free(cert_der);
+		free(key_der);
+		freeelts(attrl);
+		freeelts(tattrl);
 		return(CKR_HOST_MEMORY);
+	}
 	ptr=subject_der;
 	i2d_X509_NAME(subject,(unsigned char **)&ptr);
 	
@@ -436,7 +464,14 @@ CK_RV PKCS11_Init2_Session(
 	d2i_RSAPrivateKey(&rsa,(unsigned char **)&ptr,key_len);   
 	res=PKCS11_RSA_to_RsaPrivateKey(ulSessionHandle,rsa,user,subject_der,subject_len);
 	res=PKCS11_RSA_to_RsaPublicKey(ulSessionHandle,rsa,user,subject_der,subject_len);
-	
+
+	X509_free(x);
+	RSA_free(rsa);
+	free(cert_der);
+	free(key_der);
+	free(subject_der);
+	freeelts(attrl);
+	freeelts(tattrl);
 	log_printf("PKCS11_Init2_Session: returning with successful login\n");
 	return(CKR_OK);
 }
